@@ -285,6 +285,9 @@ Polymer({
       case 'github': return new firebase.auth.GithubAuthProvider();
       case 'google': return new firebase.auth.GoogleAuthProvider();
       case 'twitter': return new firebase.auth.TwitterAuthProvider();
+      case 'yahoo': return new firebase.auth.OAuthProvider('yahoo.com');
+      case 'microsoft': return new firebase.auth.OAuthProvider('microsoft.com');
+      
       default: this.fire('error', 'Unrecognized firebase-auth provider "' + name + '"');
     }
   },
