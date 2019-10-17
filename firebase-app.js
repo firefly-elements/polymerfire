@@ -12,16 +12,16 @@ https://github.com/firebase/polymerfire/blob/master/LICENSE
   from HTML and may be out of place here. Review them and
   then delete this comment!
 */
- // Polymer imports
-import '@polymer/polymer/polymer-legacy.js';
-import { Polymer } from '@polymer/polymer/lib/legacy/polymer-fn.js';
-import firebase from '@firebase/app';
-import '@firebase/app';
-import '@firebase/database';
-import '@firebase/auth';
-import '@firebase/storage';
-import '@firebase/messaging';
-
+// Polymer imports
+import "@polymer/polymer/polymer-legacy.js";
+import { Polymer } from "@polymer/polymer/lib/legacy/polymer-fn.js";
+import firebase from "@firebase/app";
+import "@firebase/app";
+import "@firebase/database";
+import "@firebase/auth";
+import "@firebase/storage";
+import "@firebase/messaging";
+import "@firebase/firestore";
 
 /**
  * The firebase-app element is used for initializing and configuring your
@@ -29,8 +29,7 @@ import '@firebase/messaging';
  * should not be dynamically bound.
  */
 Polymer({
-  is: 'firebase-app',
-
+  is: "firebase-app",
   properties: {
     /**
      * The name of your app. Optional.
@@ -41,9 +40,8 @@ Polymer({
      */
     name: {
       type: String,
-      value: ''
+      value: ""
     },
-
     /**
      * Your API key.
      *
@@ -55,7 +53,6 @@ Polymer({
     apiKey: {
       type: String
     },
-
     /**
      * The domain name to authenticate with.
      *
@@ -67,7 +64,6 @@ Polymer({
     authDomain: {
       type: String
     },
-
     /**
      * The URL of your Firebase Realtime Database. You can find this
      * URL in the Database panel of the Firebase Console.
@@ -78,7 +74,6 @@ Polymer({
     databaseUrl: {
       type: String
     },
-
     /**
      * The Firebase Storage bucket for your project. You can find this
      * in the Firebase Console under "Web Setup".
@@ -89,7 +84,6 @@ Polymer({
       type: String,
       value: null
     },
-
     /**
      * The Firebase Cloud Messaging Sender ID for your project. You can find
      * this in the Firebase Console under "Web Setup".
@@ -98,7 +92,10 @@ Polymer({
       type: String,
       value: null
     },
-
+    projectId: {
+      type: String,
+      value: null
+    },
     /**
      * The Firebase app object constructed from the other fields of
      * this element.
@@ -107,30 +104,38 @@ Polymer({
     app: {
       type: Object,
       notify: true,
-      computed: '__computeApp(name, apiKey, authDomain, databaseUrl, storageBucket, messagingSenderId)'
+      computed:
+        "__computeApp(name, apiKey, authDomain, databaseUrl, storageBucket, messagingSenderId, projectId)"
     }
   },
-
-  __computeApp: function(name, apiKey, authDomain, databaseUrl, storageBucket, messagingSenderId) {
+  __computeApp: function(
+    name,
+    apiKey,
+    authDomain,
+    databaseUrl,
+    storageBucket,
+    messagingSenderId,
+    projectId
+  ) {
     if (apiKey && authDomain && databaseUrl) {
-      var init = [{
-        apiKey: apiKey,
-        authDomain: authDomain,
-        databaseURL: databaseUrl,
-        storageBucket: storageBucket,
-        messagingSenderId: messagingSenderId
-      }];
-
+      var init = [
+        {
+          apiKey: apiKey,
+          authDomain: authDomain,
+          databaseURL: databaseUrl,
+          storageBucket: storageBucket,
+          messagingSenderId: messagingSenderId,
+          projectId: projectId
+        }
+      ];
       if (name) {
         init.push(name);
       }
-
       firebase.initializeApp.apply(firebase, init);
-      this.fire('firebase-app-initialized');
+      this.fire("firebase-app-initialized");
     } else {
       return null;
     }
-
     return firebase.app(name);
   }
 });

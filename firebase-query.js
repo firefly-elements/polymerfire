@@ -51,16 +51,14 @@ Polymer({
   then delete this comment!
 */
 // Polymer imports
-import '@polymer/polymer/polymer-legacy.js';
-import { Polymer } from '@polymer/polymer/lib/legacy/polymer-fn.js';
-import { FirebaseDatabaseBehavior } from './firebase-database-behavior.js';
+import "@polymer/polymer/polymer-legacy.js";
+import { Polymer } from "@polymer/polymer/lib/legacy/polymer-fn.js";
+import { FirebaseDatabaseBehavior } from "./firebase-database-behavior.js";
 
 Polymer({
-  is: 'firebase-query',
+  is: "firebase-query",
 
-  behaviors: [
-    FirebaseDatabaseBehavior
-  ],
+  behaviors: [FirebaseDatabaseBehavior],
 
   properties: {
     /**
@@ -69,8 +67,9 @@ Polymer({
      */
     query: {
       type: Object,
-      computed: '__computeQuery(ref, orderByChild, orderByValue, limitToFirst, limitToLast, startAt, endAt, equalTo)',
-      observer: '__queryChanged'
+      computed:
+        "__computeQuery(ref, orderByChild, orderByValue, limitToFirst, limitToLast, startAt, endAt, equalTo)",
+      observer: "__queryChanged"
     },
 
     /**
@@ -81,7 +80,7 @@ Polymer({
      */
     orderByChild: {
       type: String,
-      value: ''
+      value: ""
     },
 
     /**
@@ -102,7 +101,7 @@ Polymer({
      */
     startAt: {
       type: String,
-      value: ''
+      value: ""
     },
 
     /**
@@ -114,7 +113,7 @@ Polymer({
      */
     endAt: {
       type: String,
-      value: ''
+      value: ""
     },
 
     /**
@@ -182,25 +181,25 @@ Polymer({
   memoryPathToStoragePath: function(path) {
     var storagePath = this.path;
 
-    if (path !== 'data') {
-      var parts = path.split('.');
+    if (path !== "data") {
+      var parts = path.split(".");
       var index = window.parseInt(parts[1], 10);
 
       if (index != null && !isNaN(index)) {
         parts[1] = this.data[index] != null && this.data[index].$key;
       }
 
-      storagePath += parts.join('/').replace(/^data\.?/, '');
+      storagePath += parts.join("/").replace(/^data\.?/, "");
     }
 
     return storagePath;
   },
 
   storagePathToMemoryPath: function(storagePath) {
-    var path = 'data';
+    var path = "data";
 
     if (storagePath !== this.path) {
-      var parts = storagePath.replace(this.path + '/', '').split('/');
+      var parts = storagePath.replace(this.path + "/", "").split("/");
       var key = parts[0];
       var datum = this.__map[key];
 
@@ -208,7 +207,7 @@ Polymer({
         parts[0] = this.__indexFromKey(key);
       }
 
-      path += '.' + parts.join('.');
+      path += "." + parts.join(".");
     }
 
     return path;
@@ -218,7 +217,7 @@ Polymer({
     if (storagePath === this.path || /\$key$/.test(storagePath)) {
       return Promise.resolve();
     } else if (/\/\$val$/.test(storagePath)) {
-      return this._setFirebaseValue(storagePath.replace(/\/\$val$/, ''), value);
+      return this._setFirebaseValue(storagePath.replace(/\/\$val$/, ""), value);
     } else {
       return this._setFirebaseValue(storagePath, value);
     }
@@ -231,7 +230,16 @@ Polymer({
     }
   },
 
-  __computeQuery: function(ref, orderByChild, orderByValue, limitToFirst, limitToLast, startAt, endAt, equalTo) {
+  __computeQuery: function(
+    ref,
+    orderByChild,
+    orderByValue,
+    limitToFirst,
+    limitToLast,
+    startAt,
+    endAt,
+    equalTo
+  ) {
     if (ref == null) {
       return null;
     }
@@ -280,15 +288,15 @@ Polymer({
 
   __queryChanged: function(query, oldQuery) {
     if (oldQuery) {
-      oldQuery.off('value', this.__onFirebaseValue, this);
-      oldQuery.off('child_added', this.__onFirebaseChildAdded, this);
-      oldQuery.off('child_removed', this.__onFirebaseChildRemoved, this);
-      oldQuery.off('child_changed', this.__onFirebaseChildChanged, this);
-      oldQuery.off('child_moved', this.__onFirebaseChildMoved, this);
+      oldQuery.off("value", this.__onFirebaseValue, this);
+      oldQuery.off("child_added", this.__onFirebaseChildAdded, this);
+      oldQuery.off("child_removed", this.__onFirebaseChildRemoved, this);
+      oldQuery.off("child_changed", this.__onFirebaseChildChanged, this);
+      oldQuery.off("child_moved", this.__onFirebaseChildMoved, this);
 
       this.syncToMemory(function() {
         this.__map = {};
-        this.set('data', this.zeroValue);
+        this.set("data", this.zeroValue);
       });
     }
 
@@ -299,19 +307,20 @@ Polymer({
     // need help to fix this so that this function is only called once
 
     if (query) {
-      if(this._onOnce){ // remove handlers before adding again. Otherwise we get data multiplying
-        query.off('child_added', this.__onFirebaseChildAdded, this);
-        query.off('child_removed', this.__onFirebaseChildRemoved, this);
-        query.off('child_changed', this.__onFirebaseChildChanged, this);
-        query.off('child_moved', this.__onFirebaseChildMoved, this);
+      if (this._onOnce) {
+        // remove handlers before adding again. Otherwise we get data multiplying
+        query.off("child_added", this.__onFirebaseChildAdded, this);
+        query.off("child_removed", this.__onFirebaseChildRemoved, this);
+        query.off("child_changed", this.__onFirebaseChildChanged, this);
+        query.off("child_moved", this.__onFirebaseChildMoved, this);
       }
 
       this._onOnce = true;
-      this._query = query
+      this._query = query;
 
       // does the on-value first
-      query.off('value', this.__onFirebaseValue, this)
-      query.on('value', this.__onFirebaseValue, this.__onError, this)
+      query.off("value", this.__onFirebaseValue, this);
+      query.on("value", this.__onFirebaseValue, this.__onError, this);
     }
   },
 
@@ -329,56 +338,67 @@ Polymer({
   __onFirebaseValue: function(snapshot) {
     if (snapshot.hasChildren()) {
       var data = [];
-      snapshot.forEach(function(childSnapshot) {
-        var key = childSnapshot.key;
-        var value = this.__valueWithKey(key, childSnapshot.val())
+      snapshot.forEach(
+        function(childSnapshot) {
+          var key = childSnapshot.key;
+          var value = this.__valueWithKey(key, childSnapshot.val());
 
-        this.__map[key] = value;
-        data.push(value)
-      }.bind(this))
+          this.__map[key] = value;
+          data.push(value);
+        }.bind(this)
+      );
 
-      this.set('data', data);
+      this.set("data", data);
     }
 
-    const query = this.query
+    const query = this.query;
 
-    query.off('value', this.__onFirebaseValue, this)
+    query.off("value", this.__onFirebaseValue, this);
 
     // ensures that all events are called once
-    query.off('child_added', this.__onFirebaseChildAdded, this);
-    query.off('child_removed', this.__onFirebaseChildRemoved, this);
-    query.off('child_changed', this.__onFirebaseChildChanged, this);
-    query.off('child_moved', this.__onFirebaseChildMoved, this);
+    query.off("child_added", this.__onFirebaseChildAdded, this);
+    query.off("child_removed", this.__onFirebaseChildRemoved, this);
+    query.off("child_changed", this.__onFirebaseChildChanged, this);
+    query.off("child_moved", this.__onFirebaseChildMoved, this);
 
-    query.on('child_added', this.__onFirebaseChildAdded, this.__onError, this);
-    query.on('child_removed', this.__onFirebaseChildRemoved, this.__onError, this);
-    query.on('child_changed', this.__onFirebaseChildChanged, this.__onError, this);
-    query.on('child_moved', this.__onFirebaseChildMoved, this.__onError, this);
+    query.on("child_added", this.__onFirebaseChildAdded, this.__onError, this);
+    query.on(
+      "child_removed",
+      this.__onFirebaseChildRemoved,
+      this.__onError,
+      this
+    );
+    query.on(
+      "child_changed",
+      this.__onFirebaseChildChanged,
+      this.__onError,
+      this
+    );
+    query.on("child_moved", this.__onFirebaseChildMoved, this.__onError, this);
   },
 
   __onFirebaseChildAdded: function(snapshot, previousChildKey) {
     var key = snapshot.key;
 
     // check if the key-value pair already exists
-    if (this.__indexFromKey(key) >= 0) return
+    if (this.__indexFromKey(key) >= 0) return;
 
     var value = snapshot.val();
     var previousChildIndex = this.__indexFromKey(previousChildKey);
 
-    this._log('Firebase child_added:', key, value);
+    this._log("Firebase child_added:", key, value);
 
     value = this.__snapshotToValue(snapshot);
 
     this.__map[key] = value;
-    this.splice('data', previousChildIndex + 1, 0, value);
+    this.splice("data", previousChildIndex + 1, 0, value);
   },
 
   __onFirebaseChildRemoved: function(snapshot) {
-
     var key = snapshot.key;
     var value = this.__map[key];
 
-    this._log('Firebase child_removed:', key, value);
+    this._log("Firebase child_removed:", key, value);
 
     if (value) {
       this.__map[key] = null;
@@ -387,7 +407,7 @@ Polymer({
           // this only catches already deleted keys (which will return -1)
           // at least it will not delete the last element from the array (this.splice('data', -1, 1))
           if (this.__indexFromKey(key) >= 0) {
-            this.splice('data', this.__indexFromKey(key), 1);
+            this.splice("data", this.__indexFromKey(key), 1);
           }
         });
       });
@@ -398,7 +418,7 @@ Polymer({
     var key = snapshot.key;
     var prev = this.__map[key];
 
-    this._log('Firebase child_changed:', key, prev);
+    this._log("Firebase child_changed:", key, prev);
 
     if (prev) {
       this.async(function() {
@@ -412,15 +432,15 @@ Polymer({
           // supports custom object key indices.
           if (value instanceof Object) {
             for (var property in value) {
-              this.set(['data', index, property], value[property]);
+              this.set(["data", index, property], value[property]);
             }
             for (var property in prev) {
-              if(!value.hasOwnProperty(property)) {
-                this.set(['data', index, property], null);
+              if (!value.hasOwnProperty(property)) {
+                this.set(["data", index, property], null);
               }
             }
           } else {
-            this.set(['data', index], value);
+            this.set(["data", index], value);
           }
         });
       });
@@ -430,10 +450,11 @@ Polymer({
   __onFirebaseChildMoved: function(snapshot, previousChildKey) {
     var key = snapshot.key;
     var value = this.__map[key];
-    var targetIndex = previousChildKey ? this.__indexFromKey(previousChildKey) + 1 : 0;
+    var targetIndex = previousChildKey
+      ? this.__indexFromKey(previousChildKey) + 1
+      : 0;
 
-    this._log('Firebase child_moved:', key, value,
-        'to index', targetIndex);
+    this._log("Firebase child_moved:", key, value, "to index", targetIndex);
 
     if (value) {
       var index = this.__indexFromKey(key);
@@ -443,18 +464,18 @@ Polymer({
 
       this.async(function() {
         this.syncToMemory(function() {
-          this.splice('data', index, 1);
-          this.splice('data', targetIndex, 0, value);
+          this.splice("data", index, 1);
+          this.splice("data", targetIndex, 0, value);
         });
       });
     }
   },
 
   __valueWithKey: function(key, value) {
-    var leaf = typeof value !== 'object';
+    var leaf = typeof value !== "object";
 
     if (leaf) {
-      value = {$key: key, $val: value};
+      value = { $key: key, $val: value };
     } else {
       value.$key = key;
     }
