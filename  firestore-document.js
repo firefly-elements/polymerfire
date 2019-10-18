@@ -1,216 +1,186 @@
 import "@polymer/polymer/polymer-legacy.js";
 import { Polymer } from "@polymer/polymer/lib/legacy/polymer-fn.js";
-import { FirebaseFirestoreDocumentBehavior } from "./firebase-firestore-document-behavior";
+import { FirebaseCommonBehavior } from "./firebase-common-behavior";
+import "@firebase/firestore";
+import { AppStorageBehavior } from "@polymer/app-storage/app-storage-behavior";
 
-/**
- * The firebase-firestore-document element is an easy way to interact with a firestore
- * location as an object and expose it to the Polymer databinding system.
- *
- * For example:
- *
- *     <firebase-firestore-document
- *       path="/users/[[userId]]/notes/[[noteId]]"
- *       data="{{noteData}}">
- *     </firebase-firestore-document>
- *
- * This fetches the `noteData` object from the firebase location at
- * `/users/${userId}/notes/${noteId}` and exposes it to the Polymer
- * databinding system. Changes to `noteData` will likewise be, sent back up
- * and stored.
- *
- * `<firebase-firestore-document>` needs some information about how to talk to Firebase.
- * Set this configuration by adding a `<firebase-app>` element anywhere in your
- * app.
- */
-Polymer({
-  is: "fs-document",
+/** @polymerBehavior Polymer.FirebaseFirestoreDocumentBehavior */
+export const FirebaseFirestoreDocumentBehaviorImpl = {
+  properties: {
+    db: {
+      type: Object,
+      computed: "__computeDb(app)"
+    },
 
-  behaviors: [FirebaseFirestoreDocumentBehavior],
+    ref: {
+      type: Object,
+      computed: "__computeRef(db, path, disabled)",
+      observer: "__refChanged"
+    },
 
-  attached: function() {
-    this.__needSetData = true;
-    this.__refChanged(this.ref, this.ref);
-  },
+    /**
+     * Path to a Firebase root or endpoint. N.B. `path` is case sensitive.
+     * @type {string|null}
+     */
+    path: {
+      type: String,
+      value: null,
+      observer: "__pathChanged"
+    },
 
-  detached: function() {
-    if (this._unsubscribe) {
-      this._unsubscribe();
+    /**
+     * When true, Firebase listeners won't be activated. This can be useful
+     * in situations where elements are loaded into the DOM before they're
+     * ready to be activated (e.g. navigation, initialization scenarios).
+     */
+    disabled: {
+      type: Boolean,
+      value: false
+    },
+
+    /**
+     * Reference to the unsubscribe function for turning a listener off.
+     * @type {Function}
+     * @private
+     */
+    _unsubscribe: {
+      type: Object
     }
   },
 
-  get isNew() {
-    return this.disabled || !this.__pathReady(this.path);
+  observers: ["__onlineChanged(online)"],
+
+  /**
+   * Set the firebase value.
+   * @return {!firebase.Promise<void>}
+   */
+  _setFirebaseValue: function(path, value) {
+    this._log("Setting Firebase value at", path, "to", value);
+    var firestorePathValueObject = this._getKeyandValue(path);
+    if (value !== Object(value)) {
+      var field = firestorePathValueObject.field;
+      var newEntry = new Object();
+      newEntry[field] = value;
+    } else {
+      newEntry = value;
+    }
+
+    var key = value && value.$key;
+    var leaf = value && value.hasOwnProperty("$val");
+    if (key) {
+      value.$key = null;
+    }
+    var docRef = this.db.doc(firestorePathValueObject.actualPath);
+    docRef
+      .get()
+      .then(function(doc) {
+        if (doc.exists) {
+          var result = docRef.update(newEntry);
+          return result;
+        } else {
+          var result = docRef.set(newEntry, { merge: true });
+          return result;
+        }
+      })
+      .catch(function(error) {
+        console.log("Error getting document:", error);
+      });
+    // if (key) {
+    //   value.$key = key;
+    // }
   },
 
-  get zeroValue() {
-    return {};
+  _getKeyandValue: function(path) {
+    var pathArray = path.substring(1, path.length).split("/");
+    var actualPath = null;
+    var field = null;
+
+    if (pathArray.length % 2 !== 0) {
+      let pathArrayClone = [...pathArray];
+      actualPath = this._createPathEvenArray(pathArray);
+      field = pathArrayClone.pop();
+      return { actualPath, field };
+    } else {
+      actualPath = pathArray.join("/");
+      return { actualPath };
+    }
+  },
+
+  _createPathEvenArray(arr) {
+    arr.splice(-1, 1);
+    var actualPath = arr.join("/");
+    return actualPath;
+  },
+
+  __computeDb: function(app) {
+    return app ? app.firestore() : null;
+  },
+
+  __computeRef: function(db, path) {
+    if (
+      db == null ||
+      path == null ||
+      !this.__pathReady(path) ||
+      this.disabled
+    ) {
+      return null;
+    }
+
+    return db.doc(path);
   },
 
   /**
-   * Update the path and write this.data to that new location.
-   *
-   * Important note: `this.path` is updated asynchronously.
-   *
-   * @param {string} parentPath The new firebase location to write to.
-   * @param {string=} key The key within the parentPath to write `data` to. If
-   *     not given, a random key will be generated and used.
-   * @return {Promise} A promise that resolves once this.data has been
-   *     written to the new path.
-   *
+   * Override this method if needed.
+   * e.g. to detach or attach listeners.
    */
-  saveValue: function(parentPath, key) {
-    return new Promise(
-      function(resolve, reject) {
-        var path = null;
-
-        if (!this.app) {
-          reject(new Error("No app configured!"));
-        }
-
-        if (key) {
-          path = parentPath + "/" + key;
-          resolve(this._setFirebaseValue(path, this.data));
-        } else {
-          path = firebase
-            .firestore(this.app)
-            .collection(parentPath)
-            .add(this.data, function(error) {
-              if (error) {
-                reject(error);
-                return;
-              }
-
-              resolve();
-            })
-            .path.toString();
-        }
-
-        this.path = path;
-      }.bind(this)
-    );
-  },
-
-  reset: function() {
-    this.path = null;
-    return Promise.resolve();
-  },
-
-  destroy: function() {
-    return this._setFirebaseValue(this.path, null).then(
-      function() {
-        return this.reset();
-      }.bind(this)
-    );
-  },
-
-  memoryPathToStoragePath: function(path) {
-    var storagePath = this.path;
-
-    if (path !== "data") {
-      storagePath += path
-        .replace(/^data\.?/, "/")
-        .split(".")
-        .join("/");
-    }
-
-    return storagePath;
-  },
-
-  storagePathToMemoryPath: function(storagePath) {
-    var path = "data";
-
-    storagePath = storagePath
-      .replace(this.path, "")
-      .split("/")
-      .join(".");
-
-    if (storagePath) {
-      path += "." + storagePath;
-    }
-
-    return path;
-  },
-
-  getStoredValue: function(path) {
-    return new Promise(
-      function(resolve, reject) {
-        this.db.doc(path).get(
-          function(snapshot) {
-            var value = snapshot.data();
-            if (value == null) {
-              resolve(this.zeroValue);
-            }
-            resolve(value);
-          },
-          this.__onError,
-          this
-        );
-      }.bind(this)
-    );
-  },
-
-  setStoredValue: function(path, value) {
-    return this._setFirebaseValue(path, value);
-  },
-
   __refChanged: function(ref, oldRef) {
-    if (oldRef) {
-      //        oldRef.off('value', this.__onFirebaseValue, this);
-      try {
-        this.get("_unsubscribe")();
-      } catch (e) {
-        // console.error(e);
-      }
-    }
-
-    if (ref) {
-      this.set(
-        "_unsubscribe",
-        ref.onSnapshot(
-          this.__onFirebaseValue.bind(this),
-          this.__onError.bind(this)
-        )
-      );
-      //        ref.on('value', this.__onFirebaseValue, this.__onError, this);
-    }
+    return;
   },
 
-  __onFirebaseValue: function(snapshot) {
-    var value = snapshot.data();
-
-    if (value == null) {
-      value = this.zeroValue;
-      this.__needSetData = true;
-    }
-
-    if (!this.isNew) {
-      this.async(function() {
-        this.syncToMemory(function() {
-          this._log("Updating data from Firebase value:", value);
-
-          // set the value if:
-          // it is the first time we run this (or the path has changed and we are back with zeroValue)
-          // or if  this.data does not exist
-          // or value is primitive
-          // or if firebase value obj contain less keys than this.data (https://github.com/Polymer/polymer/issues/2565)
-          if (
-            this.__needSetData ||
-            !this.data ||
-            typeof value !== "object" ||
-            Object.keys(value).length < Object.keys(this.data).length
-          ) {
-            this.__needSetData = false;
-            return this.set("data", value);
-          }
-
-          // now, we loop over keys
-          for (var prop in value) {
-            if (value[prop] !== this.data[prop]) {
-              this.set(["data", prop], value[prop]);
-            }
-          }
-        });
+  __pathChanged: function(path, oldPath) {
+    if (!this.disabled && !this.valueIsEmpty(this.data)) {
+      this.syncToMemory(function() {
+        this.data = this.zeroValue;
+        this.__needSetData = true;
       });
     }
+  },
+
+  __pathReady: function(path) {
+    if (!path) {
+      return false;
+    }
+    var pieces = path.split("/");
+    if (!pieces[0].length) {
+      pieces = pieces.slice(1);
+    }
+    return path && pieces.indexOf("") < 0 && pieces.length % 2 == 0;
+  },
+
+  __onlineChanged: function(online) {
+    if (!this.ref) {
+      return;
+    }
+
+    if (online) {
+      this.db.goOnline();
+    } else {
+      this.db.goOffline();
+    }
+  },
+
+  setData: function(data, options) {
+    return this.ref.set(data, options);
+  },
+
+  updateData: function(data) {
+    return this.ref.update(data);
   }
-});
+};
+
+/** @polymerBehavior */
+export const FirebaseFirestoreDocumentBehavior = [
+  AppStorageBehavior,
+  FirebaseCommonBehavior,
+  FirebaseFirestoreDocumentBehaviorImpl
+];

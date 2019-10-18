@@ -6,7 +6,6 @@
     ]
   ],
   "_from": "polymerfire3",
-  "_id": "polymerfire3@3.0.4",
   "_inBundle": false,
   "_integrity": "sha512-Xe1GBqDhCAr2vOa4Vn4sIg2Cx5iuNvY5ryPLGLGeAJiXmZEMLGAfNirn6BjTcv9NNw8L0vrZAHVgqdAJj4Q2TQ==",
   "_location": "/polymerfire3",
@@ -29,9 +28,7 @@
   "_shasum": "4c25dee2300fd3e7cddac9d922f99f8ca68e5021",
   "_spec": "polymerfire3",
   "_where": "C:\\Users\\KraftZ\\repos\\paragonih",
-  "author": {
-    "name": "Firebase"
-  },
+  "author": "Firebase",
   "bundleDependencies": false,
   "dependencies": {
     "@polymer/app-storage": "^3.0.0-pre.21",
@@ -55,6 +52,16 @@
   ],
   "license": "BSD-3-Clause",
   "main": "polymerfire.js",
-  "name": "polymerfire",
-  "version": "3.0.6"
+  "name": "@firefly-elements/polymerfire",
+  "version": "0.5.1",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/firefly-elements/polymerfire.git"
+  },
+  "bugs": {
+    "url": "https://github.com/firefly-elements/polymerfire/issues"
+  }
 }
