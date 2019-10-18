@@ -23,7 +23,7 @@ import { FirebaseFirestoreDocumentBehavior } from "./firebase-firestore-document
  * app.
  */
 Polymer({
-  is: "firebase-document",
+  is: "fs-document",
 
   behaviors: [FirebaseFirestoreDocumentBehavior],
 
