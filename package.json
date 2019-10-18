@@ -53,7 +53,7 @@
   "license": "BSD-3-Clause",
   "main": "polymerfire.js",
   "name": "@firefly-elements/polymerfire",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

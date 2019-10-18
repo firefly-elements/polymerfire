@@ -56,20 +56,60 @@ export const FirebaseFirestoreDocumentBehaviorImpl = {
    */
   _setFirebaseValue: function(path, value) {
     this._log("Setting Firebase value at", path, "to", value);
+    var firestorePathValueObject = this._getKeyandValue(path);
+    if (value !== Object(value)) {
+      var field = firestorePathValueObject.field;
+      var newEntry = new Object();
+      newEntry[field] = value;
+    } else {
+      newEntry = value;
+    }
+
     var key = value && value.$key;
     var leaf = value && value.hasOwnProperty("$val");
     if (key) {
       value.$key = null;
     }
+    var docRef = this.db.doc(firestorePathValueObject.actualPath);
+    docRef
+      .get()
+      .then(function(doc) {
+        if (doc.exists) {
+          var result = docRef.update(newEntry);
+          return result;
+        } else {
+          var result = docRef.set(newEntry, { merge: true });
+          return result;
+        }
+      })
+      .catch(function(error) {
+        console.log("Error getting document:", error);
+      });
+    // if (key) {
+    //   value.$key = key;
+    // }
+  },
 
-    var result = this.db
-      .collection(path)
-      .doc(value.$key)
-      .set(leaf ? value.$val : value);
-    if (key) {
-      value.$key = key;
+  _getKeyandValue: function(path) {
+    var pathArray = path.substring(1, path.length).split("/");
+    var actualPath = null;
+    var field = null;
+
+    if (pathArray.length % 2 !== 0) {
+      let pathArrayClone = [...pathArray];
+      actualPath = this._createPathEvenArray(pathArray);
+      field = pathArrayClone.pop();
+      return { actualPath, field };
+    } else {
+      actualPath = pathArray.join("/");
+      return { actualPath };
     }
-    return result;
+  },
+
+  _createPathEvenArray(arr) {
+    arr.splice(-1, 1);
+    var actualPath = arr.join("/");
+    return actualPath;
   },
 
   __computeDb: function(app) {
