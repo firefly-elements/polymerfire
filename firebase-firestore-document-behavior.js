@@ -6,168 +6,181 @@ import { AppStorageBehavior } from "@polymer/app-storage/app-storage-behavior";
 
 /** @polymerBehavior Polymer.FirebaseFirestoreDocumentBehavior */
 export const FirebaseFirestoreDocumentBehaviorImpl = {
-  properties: {
-    db: {
-      type: Object,
-      computed: "__computeDb(app)"
-    },
+	properties: {
+		db: {
+			type: Object,
+			computed: "__computeDb(app)"
+		},
 
-    ref: {
-      type: Object,
-      computed: "__computeRef(db, path, disabled)",
-      observer: "__refChanged"
-    },
+		ref: {
+			type: Object,
+			computed: "__computeRef(db, path, disabled)",
+			observer: "__refChanged"
+		},
 
-    /**
-     * Path to a Firebase root or endpoint. N.B. `path` is case sensitive.
-     * @type {string|null}
-     */
-    path: {
-      type: String,
-      value: null,
-      observer: "__pathChanged"
-    },
+		/**
+		 * Path to a Firebase root or endpoint. N.B. `path` is case sensitive.
+		 * @type {string|null}
+		 */
+		path: {
+			type: String,
+			value: null,
+			observer: "__pathChanged"
+		},
 
-    /**
-     * When true, Firebase listeners won't be activated. This can be useful
-     * in situations where elements are loaded into the DOM before they're
-     * ready to be activated (e.g. navigation, initialization scenarios).
-     */
-    disabled: {
-      type: Boolean,
-      value: false
-    },
+		isChanged: {
+			type: Boolean,
+			notify: true
+		},
 
-    /**
-     * Reference to the unsubscribe function for turning a listener off.
-     * @type {Function}
-     * @private
-     */
-    _unsubscribe: {
-      type: Object
-    }
-  },
+		/**
+		 * When true, Firebase listeners won't be activated. This can be useful
+		 * in situations where elements are loaded into the DOM before they're
+		 * ready to be activated (e.g. navigation, initialization scenarios).
+		 */
+		disabled: {
+			type: Boolean,
+			value: false
+		},
 
-  observers: ["__onlineChanged(online)"],
+		/**
+		 * Reference to the unsubscribe function for turning a listener off.
+		 * @type {Function}
+		 * @private
+		 */
+		_unsubscribe: {
+			type: Object
+		}
+	},
 
-  /**
-   * Set the firebase value.
-   * @return {!firebase.Promise<void>}
-   */
-  _setFirebaseValue: async function(path, value) {
-    this._log("Setting Firebase value at", path, "to", value);
-    const firestorePathValueObject = this._getKeyandValue(path);
-    let result;
-    let newEntry;
-    if (value !== Object(value)) {
-      var field = firestorePathValueObject.field;
-      newEntry = new Object();
-      newEntry[field] = value;
-    } else {
-      newEntry = value;
-    }
+	observers: ["__onlineChanged(online)"],
 
-    const docRef = this.db.doc(firestorePathValueObject.actualPath);
-    const getDoc = await docRef.get();
-    if (getDoc.exists) {
-      result = await docRef.update(newEntry);
-    } else {
-      result = await docRef.set(newEntry, { merge: true });
-    }
-    return result;
-  },
+	/**
+	 * Set the firebase value.
+	 * @return {!firebase.Promise<void>}
+	 */
+	_setFirebaseValue: async function(path, value) {
+		this._log("Setting Firebase value at", path, "to", value);
+		this.isChanged = false;
+		const firestorePathValueObject = this._getKeyandValue(path);
 
-  _getKeyandValue: function(path) {
-    var pathArray = path.substring(1, path.length).split("/");
-    var actualPath = null;
-    var field = null;
+		let result;
+		let newEntry;
+		if (value !== Object(value)) {
+			var field = firestorePathValueObject.field;
+			newEntry = new Object();
+			newEntry[field] = value;
+		} else {
+			newEntry = value;
+		}
 
-    if (pathArray.length % 2 !== 0) {
-      let pathArrayClone = [...pathArray];
-      actualPath = this._createPathEvenArray(pathArray);
-      field = pathArrayClone.pop();
-      return { actualPath, field };
-    } else {
-      actualPath = pathArray.join("/");
-      return { actualPath };
-    }
-  },
+		const docRef = this.db.doc(firestorePathValueObject.actualPath);
+		const getDoc = await docRef.get();
+		if (getDoc.exists) {
+			result = docRef
+				.update(newEntry)
+				.then(() => (this.isChanged = true))
+				.catch(err => console.error(err));
+		} else {
+			result = docRef
+				.set(newEntry, { merge: true })
+				.then(() => (this.isChanged = true))
+				.catch(err => console.error(err));
+		}
+		return result;
+	},
 
-  _createPathEvenArray(arr) {
-    arr.splice(-1, 1);
-    var actualPath = arr.join("/");
-    return actualPath;
-  },
+	_getKeyandValue: function(path) {
+		var pathArray = path.substring(1, path.length).split("/");
+		var actualPath = null;
+		var field = null;
 
-  __computeDb: function(app) {
-    return app ? app.firestore() : null;
-  },
+		if (pathArray.length % 2 !== 0) {
+			let pathArrayClone = [...pathArray];
+			actualPath = this._createPathEvenArray(pathArray);
+			field = pathArrayClone.pop();
+			return { actualPath, field };
+		} else {
+			actualPath = pathArray.join("/");
+			return { actualPath };
+		}
+	},
 
-  __computeRef: function(db, path) {
-    if (
-      db == null ||
-      path == null ||
-      !this.__pathReady(path) ||
-      this.disabled
-    ) {
-      return null;
-    }
+	_createPathEvenArray(arr) {
+		arr.splice(-1, 1);
+		var actualPath = arr.join("/");
+		return actualPath;
+	},
 
-    return db.doc(path);
-  },
+	__computeDb: function(app) {
+		return app ? app.firestore() : null;
+	},
 
-  /**
-   * Override this method if needed.
-   * e.g. to detach or attach listeners.
-   */
-  __refChanged: function(ref, oldRef) {
-    return;
-  },
+	__computeRef: function(db, path) {
+		if (
+			db == null ||
+			path == null ||
+			!this.__pathReady(path) ||
+			this.disabled
+		) {
+			return null;
+		}
 
-  __pathChanged: function(path, oldPath) {
-    if (!this.disabled && !this.valueIsEmpty(this.data)) {
-      this.syncToMemory(function() {
-        this.data = this.zeroValue;
-        this.__needSetData = true;
-      });
-    }
-  },
+		return db.doc(path);
+	},
 
-  __pathReady: function(path) {
-    if (!path) {
-      return false;
-    }
-    var pieces = path.split("/");
-    if (!pieces[0].length) {
-      pieces = pieces.slice(1);
-    }
-    return path && pieces.indexOf("") < 0 && pieces.length % 2 == 0;
-  },
+	/**
+	 * Override this method if needed.
+	 * e.g. to detach or attach listeners.
+	 */
+	__refChanged: function(ref, oldRef) {
+		return;
+	},
 
-  __onlineChanged: function(online) {
-    if (!this.ref) {
-      return;
-    }
+	__pathChanged: function(path, oldPath) {
+		if (!this.disabled && !this.valueIsEmpty(this.data)) {
+			this.syncToMemory(function() {
+				this.data = this.zeroValue;
+				this.__needSetData = true;
+			});
+		}
+	},
 
-    if (online) {
-      this.db.goOnline();
-    } else {
-      this.db.goOffline();
-    }
-  },
+	__pathReady: function(path) {
+		if (!path) {
+			return false;
+		}
+		var pieces = path.split("/");
+		if (!pieces[0].length) {
+			pieces = pieces.slice(1);
+		}
+		return path && pieces.indexOf("") < 0 && pieces.length % 2 == 0;
+	},
 
-  setData: function(data, options) {
-    return this.ref.set(data, options);
-  },
+	__onlineChanged: function(online) {
+		if (!this.ref) {
+			return;
+		}
 
-  updateData: function(data) {
-    return this.ref.update(data);
-  }
+		if (online) {
+			this.db.goOnline();
+		} else {
+			this.db.goOffline();
+		}
+	},
+
+	setData: function(data, options) {
+		return this.ref.set(data, options);
+	},
+
+	updateData: function(data) {
+		return this.ref.update(data);
+	}
 };
 
 /** @polymerBehavior */
 export const FirebaseFirestoreDocumentBehavior = [
-  AppStorageBehavior,
-  FirebaseCommonBehavior,
-  FirebaseFirestoreDocumentBehaviorImpl
+	AppStorageBehavior,
+	FirebaseCommonBehavior,
+	FirebaseFirestoreDocumentBehaviorImpl
 ];
