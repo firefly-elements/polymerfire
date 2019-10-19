@@ -305,10 +305,8 @@ Polymer({
         where = this.__parseQueryParams(where);
       }
       where.forEach(function(eachWhere) {
-        if (
-          eachWhere.length === 3 &&
-          whereOptions.indexOf(eachWhere[1]) != -1
-        ) {
+        //TO DO: need to have an array of where 'where' actually applies
+        if (eachWhere.length === 3) {
           query = query.where.apply(query, eachWhere);
         }
       });
