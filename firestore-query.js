@@ -297,19 +297,23 @@ Polymer({
         }
       }
     }
-    if (limit) {
-      query = query.limit(limit);
-    }
     if (where) {
-      if (typeof where === "string") {
+      if (typeof where === "string" && !where.includes("documentId")) {
         where = this.__parseQueryParams(where);
+
+        where.forEach(function(eachWhere) {
+          //TO DO: need to have an array of where 'where' actually applies
+          if (eachWhere.length === 3) {
+            query = query.where.apply(query, eachWhere);
+          }
+        });
+      } else {
+        query = query.where(
+          firebase.firestore.FieldPath.documentId(),
+          "==",
+          where.split(",")[2]
+        );
       }
-      where.forEach(function(eachWhere) {
-        //TO DO: need to have an array of where 'where' actually applies
-        if (eachWhere.length === 3) {
-          query = query.where.apply(query, eachWhere);
-        }
-      });
     }
     return query;
   },
