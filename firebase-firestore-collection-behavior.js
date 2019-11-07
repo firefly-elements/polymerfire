@@ -59,18 +59,48 @@ export const FirebaseFirestoreCollectionBehaviorImpl = {
    * Set the firebase value.
    * @return {!firebase.Promise<void>}
    */
-  _setFirebaseValue: function(path, value) {
+  _setFirebaseValue: async function(path, value) {
     this._log("Setting Firebase value at", path, "to", value);
-    var key = value && value.$key;
-    var leaf = value && value.hasOwnProperty("$val");
-    if (key) {
-      value.$key = null;
+    this.isChanged = false;
+    const firestorePathValueObject = this._getKeyandValue(path);
+
+    let result;
+    let newEntry;
+    if (value !== Object(value)) {
+      var field = firestorePathValueObject.field;
+      newEntry = new Object();
+      newEntry[field] = value;
+    } else {
+      newEntry = value;
     }
-    var result = this.db.collection(path).set(leaf ? value.$val : value);
-    if (key) {
-      value.$key = key;
-    }
+    const docRef = this.db.doc(firestorePathValueObject.actualPath);
+    result = docRef
+      .update(newEntry)
+      .then(() => (this.isChanged = true))
+      .catch(err => console.error(err));
     return result;
+  },
+
+  _getKeyandValue: function(path) {
+    var pathArray = path.substring(1, path.length).split("/");
+    var actualPath = null;
+    var field = null;
+
+    if (pathArray.length % 2 !== 0) {
+      let pathArrayClone = [...pathArray];
+      actualPath = this._createPathEvenArray(pathArray);
+      field = pathArrayClone.pop();
+      return { actualPath, field };
+    } else {
+      actualPath = pathArray.join("/");
+      return { actualPath };
+    }
+  },
+
+  _createPathEvenArray(arr) {
+    arr.splice(-1, 1);
+    var actualPath = arr.join("/");
+    return actualPath;
   },
 
   __computeDb: function(app) {
