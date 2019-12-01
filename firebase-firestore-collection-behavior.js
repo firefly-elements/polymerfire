@@ -31,7 +31,6 @@ export const FirebaseFirestoreCollectionBehaviorImpl = {
       value: null,
       observer: "__pathChanged"
     },
-
     /**
      * When true, Firebase listeners won't be activated. This can be useful
      * in situations where elements are loaded into the DOM before they're
@@ -115,6 +114,9 @@ export const FirebaseFirestoreCollectionBehaviorImpl = {
       this.disabled
     ) {
       return null;
+    }
+    if (this.subcollection) {
+      return db._collectionGroup(path);
     }
     return db.collection(path);
   },

@@ -157,6 +157,16 @@ Polymer({
     startAfter: {
       type: Object
     },
+
+    /**
+     * This is a flag which dictates whether to do a subcollection based query or collection based query.
+     * In other terms it enables a  group query mechanism.
+     */
+
+    subcollection: {
+      type: Boolean,
+      value: false
+    },
     /**
      * The maximum number of documents to include in the query.
      *
