@@ -307,6 +307,11 @@ Polymer({
         }
       }
     }
+
+    if (limit) {
+      query = query.limit(limit);
+    }
+
     if (where) {
       if (typeof where === "string" && !where.includes("documentId")) {
         where = this.__parseQueryParams(where);
