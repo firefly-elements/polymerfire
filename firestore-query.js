@@ -278,30 +278,26 @@ Polymer({
       });
       if (startAt) {
         if (typeof startAt === "string") {
-          startAt = startAt.split("&&");
-          query = query.startAt.apply(query, startAt);
+          query = query.startAt(startAt);
         } else {
           query = query.startAt(startAt);
         }
       } else if (startAfter) {
         if (typeof startAfter === "string") {
-          startAfter = startAfter.split("&&");
-          query = query.startAfter.apply(query, startAfter);
+          query = query.startAfter(startAfter);
         } else {
           query = query.startAfter(startAfter);
         }
       }
       if (endAt) {
         if (typeof endAt === "string") {
-          endAt = endAt.split("&&");
-          query = query.endAt.apply(query, endAt);
+          query = query.endAt(endAt);
         } else {
           query = query.endAt(endAt);
         }
       } else if (endBefore) {
         if (typeof endBefore === "string") {
-          endBefore = endBefore.split("&&");
-          query = query.endBefore.apply(query, endBefore);
+          query = query.endBefore(endBefore);
         } else {
           query = query.endBefore(endBefore);
         }

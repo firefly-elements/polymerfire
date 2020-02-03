@@ -42,6 +42,11 @@ export const FirebaseFirestoreCollectionBehaviorImpl = {
       value: false
     },
 
+    isChanged: {
+      type: Boolean,
+      notify: true
+    },
+
     /**
      * Reference to the unsubscribe function for turning a listener off.
      * @type {Function}
@@ -73,10 +78,18 @@ export const FirebaseFirestoreCollectionBehaviorImpl = {
       newEntry = value;
     }
     const docRef = this.db.doc(firestorePathValueObject.actualPath);
-    result = docRef
-      .update(newEntry)
-      .then(() => (this.isChanged = true))
-      .catch(err => console.error(err));
+    const getDoc = await docRef.get();
+    if (getDoc.exists) {
+      result = docRef
+        .update(newEntry)
+        .then(() => (this.isChanged = true))
+        .catch(err => console.error(err));
+    } else {
+      result = docRef
+        .set(newEntry, { merge: true })
+        .then(() => (this.isChanged = true))
+        .catch(err => console.error(err));
+    }
     return result;
   },
 
