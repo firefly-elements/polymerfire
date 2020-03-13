@@ -129,7 +129,7 @@ export const FirebaseFirestoreCollectionBehaviorImpl = {
       return null;
     }
     if (this.subcollection) {
-      return db._collectionGroup(path);
+      return db.collectionGroup(path);
     }
     return db.collection(path);
   },

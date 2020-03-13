@@ -57,19 +57,16 @@ be a problem.
 */
 
 // Polymer imports
-import '@polymer/polymer/polymer-legacy.js';
-import { Polymer } from '@polymer/polymer/lib/legacy/polymer-fn.js';
-import firebase from '@firebase/app';
-import { FirebaseCommonBehavior } from './firebase-common-behavior.js';
-import '@firebase/auth';
+import "@polymer/polymer/polymer-legacy.js";
+import { Polymer } from "@polymer/polymer/lib/legacy/polymer-fn.js";
+import firebase from "@firebase/app";
+import { FirebaseCommonBehavior } from "./firebase-common-behavior.js";
+import "@firebase/auth";
 
 Polymer({
+  is: "firebase-auth",
 
-  is: 'firebase-auth',
-
-  behaviors: [
-    FirebaseCommonBehavior
-  ],
+  behaviors: [FirebaseCommonBehavior],
 
   properties: {
     /**
@@ -77,8 +74,8 @@ Polymer({
      */
     auth: {
       type: Object,
-      computed: '_computeAuth(app)',
-      observer: '__authChanged'
+      computed: "_computeAuth(app)",
+      observer: "__authChanged"
     },
 
     /**
@@ -126,7 +123,7 @@ Polymer({
      */
     signedIn: {
       type: Boolean,
-      computed: '_computeSignedIn(user)',
+      computed: "_computeSignedIn(user)",
       notify: true
     },
 
@@ -152,7 +149,6 @@ Polymer({
       readOnly: true,
       reflectToAttribute: true
     }
-
   },
 
   /**
@@ -162,7 +158,7 @@ Polymer({
    */
   signInAnonymously: function() {
     if (!this.auth) {
-      return Promise.reject('No app configured for firebase-auth!');
+      return Promise.reject("No app configured for firebase-auth!");
     }
 
     return this._handleSignIn(this.auth.signInAnonymously());
@@ -175,7 +171,7 @@ Polymer({
    */
   signInWithCustomToken: function(token) {
     if (!this.auth) {
-      return Promise.reject('No app configured for firebase-auth!');
+      return Promise.reject("No app configured for firebase-auth!");
     }
     return this._handleSignIn(this.auth.signInWithCustomToken(token));
   },
@@ -187,7 +183,7 @@ Polymer({
    */
   signInWithCredential: function(credential) {
     if (!this.auth) {
-      return Promise.reject('No app configured for firebase-auth!');
+      return Promise.reject("No app configured for firebase-auth!");
     }
     return this._handleSignIn(this.auth.signInWithCredential(credential));
   },
@@ -202,7 +198,10 @@ Polymer({
    * @return {Promise} Promise that handles success and failure.
    */
   signInWithPopup: function(provider) {
-    return this._attemptProviderSignIn(this._normalizeProvider(provider), this.auth.signInWithPopup);
+    return this._attemptProviderSignIn(
+      this._normalizeProvider(provider),
+      this.auth.signInWithPopup
+    );
   },
 
   /**
@@ -218,7 +217,10 @@ Polymer({
    * before the redirect).
    */
   signInWithRedirect: function(provider) {
-    return this._attemptProviderSignIn(this._normalizeProvider(provider), this.auth.signInWithRedirect);
+    return this._attemptProviderSignIn(
+      this._normalizeProvider(provider),
+      this.auth.signInWithRedirect
+    );
   },
 
   /**
@@ -229,8 +231,9 @@ Polymer({
    * @return {Promise} Promise that handles success and failure.
    */
   signInWithEmailAndPassword: function(email, password) {
-
-    return this._handleSignIn(this.auth.signInWithEmailAndPassword(email, password));
+    return this._handleSignIn(
+      this.auth.signInWithEmailAndPassword(email, password)
+    );
   },
 
   /**
@@ -241,7 +244,9 @@ Polymer({
    * @return {Promise} Promise that handles success and failure.
    */
   createUserWithEmailAndPassword: function(email, password) {
-    return this._handleSignIn(this.auth.createUserWithEmailAndPassword(email, password));
+    return this._handleSignIn(
+      this.auth.createUserWithEmailAndPassword(email, password)
+    );
   },
 
   /**
@@ -261,7 +266,7 @@ Polymer({
    */
   signOut: function() {
     if (!this.auth) {
-      return Promise.reject('No app configured for auth!');
+      return Promise.reject("No app configured for auth!");
     }
 
     return this.auth.signOut();
@@ -270,10 +275,10 @@ Polymer({
   _attemptProviderSignIn: function(provider, method) {
     provider = provider || this._providerFromName(this.provider);
     if (!provider) {
-      return Promise.reject('Must supply a provider for popup sign in.');
+      return Promise.reject("Must supply a provider for popup sign in.");
     }
     if (!this.auth) {
-      return Promise.reject('No app configured for firebase-auth!');
+      return Promise.reject("No app configured for firebase-auth!");
     }
 
     return this._handleSignIn(method.call(this.auth, provider));
@@ -281,29 +286,41 @@ Polymer({
 
   _providerFromName: function(name) {
     switch (name) {
-      case 'facebook': return new firebase.auth.FacebookAuthProvider();
-      case 'github': return new firebase.auth.GithubAuthProvider();
-      case 'google': return new firebase.auth.GoogleAuthProvider();
-      case 'twitter': return new firebase.auth.TwitterAuthProvider();
-      case 'yahoo': return new firebase.auth.OAuthProvider('yahoo.com');
-      case 'microsoft': return new firebase.auth.OAuthProvider('microsoft.com');
-      
-      default: this.fire('error', 'Unrecognized firebase-auth provider "' + name + '"');
+      case "facebook":
+        return new firebase.auth.FacebookAuthProvider();
+      case "github":
+        return new firebase.auth.GithubAuthProvider();
+      case "google":
+        return new firebase.auth.GoogleAuthProvider();
+      case "twitter":
+        return new firebase.auth.TwitterAuthProvider();
+      case "yahoo":
+        return new firebase.auth.OAuthProvider("yahoo.com");
+      case "microsoft":
+        return new firebase.auth.OAuthProvider("microsoft.com");
+
+      default:
+        this.fire(
+          "error",
+          'Unrecognized firebase-auth provider "' + name + '"'
+        );
     }
   },
 
   _normalizeProvider: function(provider) {
-    if (typeof provider === 'string') {
+    if (typeof provider === "string") {
       return this._providerFromName(provider);
     }
     return provider;
   },
 
   _handleSignIn: function(promise) {
-    return promise.catch(function(err) {
-      this.fire('error', err);
-      throw err;
-    }.bind(this));
+    return promise.catch(
+      function(err) {
+        this.fire("error", err);
+        throw err;
+      }.bind(this)
+    );
   },
 
   _computeSignedIn: function(user) {
@@ -322,12 +339,15 @@ Polymer({
     }
 
     if (this.auth) {
-      this._unsubscribe = this.auth.onAuthStateChanged(function(user) {
-        this._setUser(user);
-        this._setStatusKnown(true);
-      }.bind(this), function(err) {
-        this.fire('error', err);
-      }.bind(this));
+      this._unsubscribe = this.auth.onAuthStateChanged(
+        function(user) {
+          this._setUser(user);
+          this._setStatusKnown(true);
+        }.bind(this),
+        function(err) {
+          this.fire("error", err);
+        }.bind(this)
+      );
     }
   }
 });
