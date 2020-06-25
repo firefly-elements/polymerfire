@@ -1,3 +1,4 @@
+import firebase from "@firebase/app";
 import "@polymer/polymer/polymer-legacy.js";
 import { Polymer } from "@polymer/polymer/lib/legacy/polymer-fn.js";
 import { FirebaseFirestoreDocumentBehavior } from "./firebase-firestore-document-behavior";
@@ -27,12 +28,12 @@ Polymer({
 
   behaviors: [FirebaseFirestoreDocumentBehavior],
 
-  attached: function() {
+  attached: function () {
     this.__needSetData = true;
     this.__refChanged(this.ref, this.ref);
   },
 
-  detached: function() {
+  detached: function () {
     if (this._unsubscribe) {
       this._unsubscribe();
     }
@@ -58,52 +59,58 @@ Polymer({
    *     written to the new path.
    *
    */
-  saveValue: function(parentPath, key) {
+  saveValue: function (parentPath, key) {
     return new Promise(
-      function(resolve, reject) {
+      function (resolve, reject) {
         var path = null;
-
         if (!this.app) {
           reject(new Error("No app configured!"));
         }
-
         if (key) {
           path = parentPath + "/" + key;
           resolve(this._setFirebaseValue(path, this.data));
         } else {
-          path = firebase
+          firebase
             .firestore(this.app)
             .collection(parentPath)
-            .add(this.data, function(error) {
-              if (error) {
-                reject(error);
-                return;
-              }
-
-              resolve();
+            .add(this.data)
+            .then((content) => {
+              path = content.path.toString();
+              resolve(true);
             })
-            .path.toString();
+            .catch((error) => reject(error));
         }
-
         this.path = path;
       }.bind(this)
     );
   },
 
-  reset: function() {
+  reset: function () {
     this.path = null;
     return Promise.resolve();
   },
 
-  destroy: function() {
+  deleteStoredValue: function (path) {
+    return new Promise(
+      function (resolve, reject) {
+        this.db
+          .doc(path)
+          .delete()
+          .then(() => resolve(true))
+          .catch((err) => reject(err));
+      }.bind(this)
+    );
+  },
+
+  destroy: function () {
     return this._setFirebaseValue(this.path, null).then(
-      function() {
+      function () {
         return this.reset();
       }.bind(this)
     );
   },
 
-  memoryPathToStoragePath: function(path) {
+  memoryPathToStoragePath: function (path) {
     var storagePath = this.path;
 
     if (path !== "data") {
@@ -116,13 +123,10 @@ Polymer({
     return storagePath;
   },
 
-  storagePathToMemoryPath: function(storagePath) {
+  storagePathToMemoryPath: function (storagePath) {
     var path = "data";
 
-    storagePath = storagePath
-      .replace(this.path, "")
-      .split("/")
-      .join(".");
+    storagePath = storagePath.replace(this.path, "").split("/").join(".");
 
     if (storagePath) {
       path += "." + storagePath;
@@ -131,29 +135,28 @@ Polymer({
     return path;
   },
 
-  getStoredValue: function(path) {
+  getStoredValue: function (path) {
     return new Promise(
-      function(resolve, reject) {
-        this.db.doc(path).get(
-          function(snapshot) {
+      function (resolve, reject) {
+        this.db
+          .doc(path)
+          .get()
+          .then((snapshot) => {
             var value = snapshot.data();
             if (value == null) {
               resolve(this.zeroValue);
             }
             resolve(value);
-          },
-          this.__onError,
-          this
-        );
+          })
+          .catch(this.__onError);
       }.bind(this)
     );
   },
-
-  setStoredValue: function(path, value) {
+  setStoredValue: function (path, value) {
     return this._setFirebaseValue(path, value);
   },
 
-  __refChanged: function(ref, oldRef) {
+  __refChanged: function (ref, oldRef) {
     if (oldRef) {
       //        oldRef.off('value', this.__onFirebaseValue, this);
       try {
@@ -175,7 +178,7 @@ Polymer({
     }
   },
 
-  __onFirebaseValue: function(snapshot) {
+  __onFirebaseValue: function (snapshot) {
     var value = snapshot.data();
 
     if (value == null) {
@@ -184,8 +187,8 @@ Polymer({
     }
 
     if (!this.isNew) {
-      this.async(function() {
-        this.syncToMemory(function() {
+      this.async(function () {
+        this.syncToMemory(function () {
           this._log("Updating data from Firebase value:", value);
 
           // set the value if:
@@ -212,5 +215,5 @@ Polymer({
         });
       });
     }
-  }
+  },
 });
